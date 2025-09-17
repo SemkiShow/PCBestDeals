@@ -30,8 +30,8 @@ struct BenchmarkEntry
 inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
 {
     if (a.type != b.type) return a.type < b.type;
-    if (a.sceneName != b.sceneName) return a.sceneName < b.sceneName;
     if (a.name != b.name) return a.name < b.name;
+    if (a.sceneName != b.sceneName) return a.sceneName < b.sceneName;
     return a.score < b.score;
 }
 void DownloadBlenderBenchmarks();

@@ -205,18 +205,18 @@ void ProcessBlenderBenchmarks()
     // Remove duplicates by finding the median average of the same devices' scores
     std::cout << "Removing duplicates...\n";
     std::vector<BenchmarkEntry> benchmarks;
-    std::string lastName = "";
+    std::string lastSceneName = "";
     int start = 0;
     for (size_t i = 0; i < rawBenchmarks.size(); i++)
     {
-        if (rawBenchmarks[i].name != lastName)
+        if (rawBenchmarks[i].name != lastSceneName)
         {
             auto& benchmark = rawBenchmarks[i];
             benchmarks.emplace_back(benchmark.name, benchmark.sceneName, benchmark.type,
                                     rawBenchmarks[start + (i - start) / 2].score);
             start = i + 1;
         }
-        lastName = rawBenchmarks[i].name;
+        lastSceneName = rawBenchmarks[i].sceneName;
     }
 
     // Cache processed data
