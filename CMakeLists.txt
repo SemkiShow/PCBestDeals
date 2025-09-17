@@ -20,11 +20,16 @@ set(RAYLIB_VERSION 5.5)
 set(RAYGUI_VERSION 4.0)
 set(ZLIB_VERSION 1.3.1)
 set(LIBZIP_VERSION 1.11.4)
+set(SIMDJSON_VERSION 4.0.3)
+
+# Turn off all warning-related errors when compiling third-party code
+add_compile_options(-Wno-error -O2)
+message(STATUS "Downloading required libraries")
 
 FetchContent_Declare(
     raylib
     DOWNLOAD_EXTRACT_TIMESTAMP OFF
-    URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
+    URL https://github.com/raysan5/raylib/archive/${RAYLIB_VERSION}.zip
     FIND_PACKAGE_ARGS
 )
 FetchContent_MakeAvailable(raylib)
@@ -32,7 +37,7 @@ FetchContent_MakeAvailable(raylib)
 # Raygui
 FetchContent_Declare(
     raygui
-    URL https://github.com/raysan5/raygui/archive/refs/tags/${RAYGUI_VERSION}.tar.gz
+    URL https://github.com/raysan5/raygui/archive/${RAYGUI_VERSION}.zip
 )
 FetchContent_MakeAvailable(raygui)
 add_subdirectory(${raygui_SOURCE_DIR}/projects/CMake)
@@ -51,7 +56,7 @@ if (NOT TARGET CURL::libcurl)
     set(MBEDTLS_CONFIG_FILE ${CMAKE_SOURCE_DIR}/include/my_mbedtls_config.h CACHE FILEPATH "" FORCE)
     FetchContent_Declare(
         mbedtls
-        URL https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v${MBEDTLS_VERSION}.zip
+        URL https://github.com/Mbed-TLS/mbedtls/archive/v${MBEDTLS_VERSION}.zip
     )
     FetchContent_MakeAvailable(mbedtls)
     set(MBEDTLS_INCLUDE_DIR ${mbedtls_SOURCE_DIR}/include CACHE PATH "" FORCE)
@@ -127,11 +132,19 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(libzip)
 add_dependencies(zip zlibstatic)
 
+# simdjson
+FetchContent_Declare(
+    simdjson
+    URL https://github.com/simdjson/simdjson/archive/v${SIMDJSON_VERSION}.zip
+)
+FetchContent_MakeAvailable(simdjson)
+
+add_compile_options(-Wall -Wextra)
 file(GLOB SOURCES src/*.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include/)
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib raygui zip)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib raygui zip simdjson)
 if (NOT TARGET CURL::libcurl)
     add_dependencies(${PROJECT_NAME} libpsl libcurl)
     target_include_directories(${PROJECT_NAME} PRIVATE

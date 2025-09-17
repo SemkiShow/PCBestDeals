@@ -1,3 +1,4 @@
+#include "Benchmarks.hpp"
 #include "UI.hpp"
 #include "raygui.h"
 #include "raylib.h"
@@ -11,6 +12,8 @@ int main()
     flags |= FLAG_WINDOW_RESIZABLE;
     SetConfigFlags(flags);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
+    ProcessBlenderBenchmarks();
+    return 0;
 
     // Init raylib
     InitWindow(windowSize[0], windowSize[1], "PC Best Deals");
