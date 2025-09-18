@@ -1,7 +1,8 @@
 #pragma once
 
 #include <ostream>
-#include <string_view>
+#include <string>
+#include <vector>
 
 enum class DeviceType
 {
@@ -18,11 +19,11 @@ struct BenchmarkEntry
 {
     std::string name, sceneName;
     DeviceType type;
-    double score;
+    double renderTime, score;
 
     BenchmarkEntry() {}
-    BenchmarkEntry(std::string name, std::string sceneName, DeviceType type, double score)
-        : name(name), sceneName(sceneName), type(type), score(score)
+    BenchmarkEntry(std::string name, std::string sceneName, DeviceType type, double renderTime)
+        : name(name), sceneName(sceneName), type(type), renderTime(renderTime)
     {
     }
 };
@@ -34,5 +35,6 @@ inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
     if (a.sceneName != b.sceneName) return a.sceneName < b.sceneName;
     return a.score < b.score;
 }
+
 void DownloadBlenderBenchmarks();
-void ProcessBlenderBenchmarks();
+std::vector<BenchmarkEntry> ProcessBlenderBenchmarks();

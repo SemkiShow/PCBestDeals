@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #define CURL_STATICLIB
 #include <curl/curl.h>
 #include <simdjson.h>
@@ -132,7 +133,28 @@ void DownloadBlenderBenchmarks()
     std::filesystem::remove("tmp/opendata.zip");
 }
 
-void ProcessBlenderBenchmarks()
+std::unordered_map<std::string, double>
+GetSceneCoefficients(const std::vector<BenchmarkEntry>& benchmarks)
+{
+    std::unordered_map<std::string, std::vector<double>> sceneTimes;
+    for (size_t i = 0; i < benchmarks.size(); i++)
+    {
+        sceneTimes[benchmarks[i].sceneName].push_back(benchmarks[i].renderTime);
+    }
+    for (auto& entry: sceneTimes)
+    {
+        std::sort(entry.second.begin(), entry.second.end());
+    }
+
+    std::unordered_map<std::string, double> sceneCoefficients;
+    for (auto& entry: sceneTimes)
+    {
+        sceneCoefficients[entry.first] = entry.second[entry.second.size() / 2];
+    }
+    return sceneCoefficients;
+}
+
+std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
 {
     // Download if missing
     if (!std::filesystem::exists("tmp/opendata")) DownloadBlenderBenchmarks();
@@ -150,7 +172,7 @@ void ProcessBlenderBenchmarks()
     if (benchmarksPath == "")
     {
         std::cerr << "Failed to find the benchmarks file!\n";
-        return;
+        return {};
     }
     std::cout << benchmarksPath << '\n';
 
@@ -187,7 +209,7 @@ void ProcessBlenderBenchmarks()
         {
             double renderTime = data["stats"]["total_render_time"].get_double();
             std::string sceneName = std::string(data["scene"]["label"]);
-            rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, 1e6 / renderTime);
+            rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, renderTime);
         }
         else
         {
@@ -196,36 +218,43 @@ void ProcessBlenderBenchmarks()
                 if (scene["stats"]["result"]->get_string().value() == "CRASH") continue;
                 double renderTime = scene["stats"]["total_render_time"].get_double();
                 std::string sceneName = std::string(scene["name"]);
-                rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, 1e6 / renderTime);
+                rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, renderTime);
             }
         }
     }
     std::sort(rawBenchmarks.begin(), rawBenchmarks.end());
 
+    // Get scene coefficients
+    auto sceneCoefficients = GetSceneCoefficients(rawBenchmarks);
+
     // Remove duplicates by finding the median average of the same devices' scores
     std::cout << "Removing duplicates...\n";
     std::vector<BenchmarkEntry> benchmarks;
-    std::string lastSceneName = "";
-    int start = 0;
+    std::vector<double> scores;
+    std::string lastName = rawBenchmarks[0].name;
     for (size_t i = 0; i < rawBenchmarks.size(); i++)
     {
-        if (rawBenchmarks[i].name != lastSceneName)
+        if (rawBenchmarks[i].name != lastName)
         {
+            std::sort(scores.begin(), scores.end());
             auto& benchmark = rawBenchmarks[i];
             benchmarks.emplace_back(benchmark.name, benchmark.sceneName, benchmark.type,
-                                    rawBenchmarks[start + (i - start) / 2].score);
-            start = i + 1;
+                                    scores[scores.size() / 2]);
+            benchmarks[benchmarks.size()-1].score = scores[scores.size() / 2];
+            scores.clear();
         }
-        lastSceneName = rawBenchmarks[i].sceneName;
+        scores.push_back(rawBenchmarks[i].renderTime *
+                         sceneCoefficients[rawBenchmarks[i].sceneName]);
+        lastName = rawBenchmarks[i].name;
     }
 
     // Cache processed data
     std::ofstream outputFile("benchmarks.csv");
     for (size_t i = 0; i < benchmarks.size(); i++)
     {
-        outputFile << benchmarks[i].name << ',' << benchmarks[i].type << ',' << benchmarks[i].score
-                   << ',' << benchmarks[i].sceneName;
+        outputFile << benchmarks[i].name << ',' << benchmarks[i].type << ',' << benchmarks[i].score;
         if (i < benchmarks.size() - 1) outputFile << ",\n";
     }
     outputFile.close();
+    return benchmarks;
 }
