@@ -94,7 +94,6 @@ int UnzipFile(const std::string& zipPath, const std::string& extractDir)
             {
                 fwrite(buffer, 1, bytesRead, outfile);
             }
-            std::cout << "Successfully extracted " << zipPath << " to " << extractDir << '\n';
 
             fclose(outfile);
             zip_fclose(zfile);
@@ -102,6 +101,7 @@ int UnzipFile(const std::string& zipPath, const std::string& extractDir)
     }
 
     zip_close(archive);
+    std::cout << "Successfully extracted " << zipPath << " to " << extractDir << '\n';
     return 0;
 }
 
@@ -133,13 +133,53 @@ void DownloadBlenderBenchmarks()
     std::filesystem::remove("tmp/opendata.zip");
 }
 
+void ProcessBlenderBenchmarkEntry(simdjson::dom::element entry,
+                                  std::vector<BenchmarkEntry>& rawBenchmarks)
+{
+    auto deviceInfo = entry["device_info"];
+    auto computeDevice = deviceInfo["compute_devices"].at(0);
+
+    std::string deviceName =
+        std::string(computeDevice->is_string() ? computeDevice : computeDevice["name"]);
+    for (size_t i = 0; i < deviceName.size(); i++)
+    {
+        if (deviceName[i] == ',') deviceName.erase(deviceName.begin() + i);
+    }
+
+    DeviceType deviceType =
+        (deviceInfo["device_type"].get_string().value() == "CPU" ? DeviceType::CPU
+                                                                 : DeviceType::GPU);
+
+    if (!entry["stats"].error())
+    {
+        // Skip entries that do not have the samples_per_minute field
+        if (entry["stats"]["samples_per_minute"].error()) return;
+
+        double score = entry["stats"]["samples_per_minute"].get_double();
+        std::string sceneName = std::string(entry["scene"]["label"]);
+        rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, score);
+    }
+    else
+    {
+        // Skip old Blender data that does not have the samples_per_minute field
+        return;
+        for (auto scene: entry["scenes"])
+        {
+            if (scene["stats"]["result"]->get_string().value() == "CRASH") continue;
+            double score = scene["stats"]["samples_per_minute"].get_double();
+            std::string sceneName = std::string(scene["name"]);
+            rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, score);
+        }
+    }
+}
+
 std::unordered_map<std::string, double>
 GetSceneCoefficients(const std::vector<BenchmarkEntry>& benchmarks)
 {
     std::unordered_map<std::string, std::vector<double>> sceneTimes;
     for (size_t i = 0; i < benchmarks.size(); i++)
     {
-        sceneTimes[benchmarks[i].sceneName].push_back(benchmarks[i].renderTime);
+        sceneTimes[benchmarks[i].sceneName].push_back(benchmarks[i].score);
     }
     for (auto& entry: sceneTimes)
     {
@@ -176,8 +216,8 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     }
     std::cout << benchmarksPath << '\n';
 
-    // Load the file
-    std::cout << "Loading the Blender benchmarks file...\n";
+    // Process the file
+    std::cout << "Processing the Blender benchmarks file...\n";
     simdjson::dom::parser parser;
     std::vector<BenchmarkEntry> rawBenchmarks;
     std::ifstream benchmarksFile(benchmarksPath);
@@ -194,32 +234,16 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
 
         // Extract data
         auto data = doc["data"];
-        if (data.is_array()) data = data.at(0);
-        auto deviceInfo = data["device_info"];
-        auto computeDevice = deviceInfo["compute_devices"].at(0);
-
-        std::string deviceName =
-            std::string(computeDevice->is_string() ? computeDevice : computeDevice["name"]);
-
-        DeviceType deviceType =
-            (deviceInfo["device_type"].get_string().value() == "CPU" ? DeviceType::CPU
-                                                                     : DeviceType::GPU);
-
-        if (data["scenes"].error())
+        if (data.is_array())
         {
-            double renderTime = data["stats"]["total_render_time"].get_double();
-            std::string sceneName = std::string(data["scene"]["label"]);
-            rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, renderTime);
+            for (auto entry: data)
+            {
+                ProcessBlenderBenchmarkEntry(entry, rawBenchmarks);
+            }
         }
         else
         {
-            for (auto scene: data["scenes"])
-            {
-                if (scene["stats"]["result"]->get_string().value() == "CRASH") continue;
-                double renderTime = scene["stats"]["total_render_time"].get_double();
-                std::string sceneName = std::string(scene["name"]);
-                rawBenchmarks.emplace_back(deviceName, sceneName, deviceType, renderTime);
-            }
+            ProcessBlenderBenchmarkEntry(data.value(), rawBenchmarks);
         }
     }
     std::sort(rawBenchmarks.begin(), rawBenchmarks.end());
@@ -238,13 +262,11 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
         {
             std::sort(scores.begin(), scores.end());
             auto& benchmark = rawBenchmarks[i];
-            benchmarks.emplace_back(benchmark.name, benchmark.sceneName, benchmark.type,
-                                    scores[scores.size() / 2]);
-            benchmarks[benchmarks.size()-1].score = scores[scores.size() / 2];
+            benchmarks.emplace_back(benchmark.name, benchmark.type, 0);
+            benchmarks[benchmarks.size() - 1].score = scores[scores.size() / 2];
             scores.clear();
         }
-        scores.push_back(rawBenchmarks[i].renderTime *
-                         sceneCoefficients[rawBenchmarks[i].sceneName]);
+        scores.push_back(sceneCoefficients[rawBenchmarks[i].sceneName] * rawBenchmarks[i].score);
         lastName = rawBenchmarks[i].name;
     }
 
@@ -256,5 +278,43 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
         if (i < benchmarks.size() - 1) outputFile << ",\n";
     }
     outputFile.close();
+    return benchmarks;
+}
+
+std::vector<std::string> Split(const std::string& input, const char delimiter = ',')
+{
+    std::vector<std::string> output(1, "");
+    int index = 0;
+    for (size_t i = 0; i < input.size(); i++)
+    {
+        if (input[i] == delimiter)
+        {
+            index++;
+            output.push_back("");
+            continue;
+        }
+        output[index] += input[i];
+    }
+    return output;
+}
+
+std::vector<BenchmarkEntry> LoadCSVBenchmarks(const std::string& path)
+{
+    std::ifstream file(path);
+    std::string line, benchmarksString;
+    while (std::getline(file, line))
+    {
+        benchmarksString += line;
+    }
+    auto benchmarksSplit = Split(benchmarksString);
+    std::vector<BenchmarkEntry> benchmarks;
+    for (size_t i = 0; i < benchmarksSplit.size(); i += 3)
+    {
+        auto name = benchmarksSplit[i];
+        auto type = (benchmarksSplit[i + 1] == "CPU" ? DeviceType::CPU : DeviceType::GPU);
+        auto score = stod(benchmarksSplit[i + 2]);
+        benchmarks.emplace_back(name, type, score);
+        benchmarks[benchmarks.size() - 1].score = score;
+    }
     return benchmarks;
 }

@@ -19,11 +19,15 @@ struct BenchmarkEntry
 {
     std::string name, sceneName;
     DeviceType type;
-    double renderTime, score;
+    double score;
 
     BenchmarkEntry() {}
-    BenchmarkEntry(std::string name, std::string sceneName, DeviceType type, double renderTime)
-        : name(name), sceneName(sceneName), type(type), renderTime(renderTime)
+    BenchmarkEntry(std::string name, std::string sceneName, DeviceType type, double score)
+        : name(name), sceneName(sceneName), type(type), score(score)
+    {
+    }
+    BenchmarkEntry(std::string name, DeviceType type, double score)
+        : name(name), type(type), score(score)
     {
     }
 };
@@ -38,3 +42,4 @@ inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
 
 void DownloadBlenderBenchmarks();
 std::vector<BenchmarkEntry> ProcessBlenderBenchmarks();
+std::vector<BenchmarkEntry> LoadCSVBenchmarks(const std::string& path);
