@@ -12,7 +12,8 @@ int main()
     flags |= FLAG_WINDOW_RESIZABLE;
     SetConfigFlags(flags);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
-    GetEbayToken(true);
+    auto token = GetEbayToken(true);
+    auto deals = GetEbayDeals("phone", token, true);
     return 0;
 
     // Init raylib

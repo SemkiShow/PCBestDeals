@@ -56,9 +56,8 @@ std::array<std::string, 2> GetANewEbayToken(const std::string& clientID,
         headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
         headers = curl_slist_append(headers, authHeader.c_str());
 
-        std::string postFields = "grant_type=client_credentials&scope=";
-        postFields += sandbox ? "https://api.ebay.com/oauth/api_scope/buy.item.feed"
-                              : "https://api.ebay.com/oauth/api_scope/buy.browse";
+        std::string postFields =
+            "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope";
 
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -129,4 +128,83 @@ std::string GetEbayToken(bool sandbox)
     }
 
     return credentials[2];
+}
+
+std::string UrlEncode(const std::string& input)
+{
+    std::ostringstream output;
+    output.fill('0');
+    output << std::hex;
+
+    for (const auto& c: input)
+    {
+        // Unreserved characters according to RFC 3986
+        if (isalnum(static_cast<unsigned char>(c)) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            output << c;
+        }
+        else
+        {
+            output << '%' << std::uppercase << std::setw(2) << int(static_cast<unsigned char>(c));
+        }
+    }
+
+    return output.str();
+}
+
+std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string& token,
+                                    bool sandbox)
+{
+    CURL* curl = curl_easy_init();
+    std::string readBuffer;
+
+    if (curl)
+    {
+        std::string url = "https://api.";
+        if (sandbox) url += "sandbox.";
+        url += "ebay.com/buy/browse/v1/item_summary/search?q=" + UrlEncode(query) + "&limit=200";
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+
+        CURLcode res = curl_easy_perform(curl);
+        if (res != CURLE_OK)
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << "\n";
+
+        curl_easy_cleanup(curl);
+    }
+
+    // Parse JSON
+    simdjson::dom::parser parser;
+    simdjson::dom::element doc;
+    auto error = parser.parse(readBuffer).get(doc);
+    if (error)
+    {
+        std::cerr << "JSON parse error: " << error << "\n";
+        return {};
+    }
+
+    std::vector<DealEntry> deals;
+    for (auto item: doc["itemSummaries"])
+    {
+        std::string title, price;
+        if (!item["title"].error())
+        {
+            title = std::string(item["title"]);
+        }
+        if (!item["price"].error() && !item["price"]["value"].error())
+        {
+            price = std::string(item["price"]["value"]);
+        }
+
+        std::cout << title << " - " << price << "\n";
+        deals.emplace_back(title, stod(price));
+    }
+
+    return deals;
 }
