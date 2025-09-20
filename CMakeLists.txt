@@ -23,7 +23,7 @@ set(LIBZIP_VERSION 1.11.4)
 set(SIMDJSON_VERSION 4.0.3)
 
 # Turn off all warning-related errors when compiling third-party code
-add_compile_options(-Wno-error -O2)
+add_compile_options(-Wno-error)
 message(STATUS "Downloading required libraries")
 
 FetchContent_Declare(

@@ -1,13 +1,13 @@
+#define CURL_STATICLIB
 #include "Benchmarks.hpp"
 #include <cstring>
+#include <curl/curl.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <simdjson.h>
 #include <string>
 #include <unordered_map>
-#define CURL_STATICLIB
-#include <curl/curl.h>
-#include <simdjson.h>
 #include <zip.h>
 
 size_t WriteFileCallback(void* ptr, size_t size, size_t nmemb, void* stream)

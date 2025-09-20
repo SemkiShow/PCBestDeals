@@ -1,4 +1,4 @@
-#include "Benchmarks.hpp"
+#include "Prices.hpp"
 #include "UI.hpp"
 #include "raygui.h"
 #include "raylib.h"
@@ -12,7 +12,7 @@ int main()
     flags |= FLAG_WINDOW_RESIZABLE;
     SetConfigFlags(flags);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
-    ProcessBlenderBenchmarks();
+    GetEbayToken(true);
     return 0;
 
     // Init raylib
