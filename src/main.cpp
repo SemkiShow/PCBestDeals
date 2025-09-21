@@ -1,7 +1,8 @@
+#include "Benchmarks.hpp"
 #include "Prices.hpp"
 #include "UI.hpp"
-#include "raygui.h"
-#include "raylib.h"
+#include <raygui.h>
+#include <raylib.h>
 
 int main()
 {
@@ -12,8 +13,9 @@ int main()
     flags |= FLAG_WINDOW_RESIZABLE;
     SetConfigFlags(flags);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
-    auto token = GetEbayToken(true);
-    auto deals = GetEbayDeals("phone", token, true);
+    auto benchmarks = GetBlenderBenchmarks();
+    auto token = GetEbayToken();
+    auto partPrices = DownloadEbayPartPrices(benchmarks, token);
     return 0;
 
     // Init raylib

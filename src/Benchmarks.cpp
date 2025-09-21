@@ -281,7 +281,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     return benchmarks;
 }
 
-std::vector<std::string> Split(const std::string& input, const char delimiter = ',')
+std::vector<std::string> Split(const std::string& input, const char delimiter)
 {
     std::vector<std::string> output(1, "");
     int index = 0;
@@ -295,26 +295,32 @@ std::vector<std::string> Split(const std::string& input, const char delimiter = 
         }
         output[index] += input[i];
     }
+    if (output.size() == 1 && output[0] == "") output.clear();
     return output;
 }
 
-std::vector<BenchmarkEntry> LoadCSVBenchmarks(const std::string& path)
+std::vector<BenchmarkEntry> GetBlenderBenchmarks()
 {
-    std::ifstream file(path);
-    std::string line, benchmarksString;
-    while (std::getline(file, line))
+    if (std::filesystem::exists("benchmarks.csv"))
     {
-        benchmarksString += line;
+        std::ifstream file("benchmarks.csv");
+        std::string line, benchmarksString;
+        while (std::getline(file, line))
+        {
+            benchmarksString += line;
+        }
+        auto benchmarksSplit = Split(benchmarksString);
+        std::vector<BenchmarkEntry> benchmarks;
+        for (size_t i = 0; i < benchmarksSplit.size(); i += 3)
+        {
+            auto name = benchmarksSplit[i];
+            auto type = (benchmarksSplit[i + 1] == "CPU" ? DeviceType::CPU : DeviceType::GPU);
+            auto score = stod(benchmarksSplit[i + 2]);
+            benchmarks.emplace_back(name, type, score);
+            benchmarks[benchmarks.size() - 1].score = score;
+        }
+        return benchmarks;
     }
-    auto benchmarksSplit = Split(benchmarksString);
-    std::vector<BenchmarkEntry> benchmarks;
-    for (size_t i = 0; i < benchmarksSplit.size(); i += 3)
-    {
-        auto name = benchmarksSplit[i];
-        auto type = (benchmarksSplit[i + 1] == "CPU" ? DeviceType::CPU : DeviceType::GPU);
-        auto score = stod(benchmarksSplit[i + 2]);
-        benchmarks.emplace_back(name, type, score);
-        benchmarks[benchmarks.size() - 1].score = score;
-    }
-    return benchmarks;
+    else
+        return ProcessBlenderBenchmarks();
 }

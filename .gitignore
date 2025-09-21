@@ -4,3 +4,4 @@ build*/
 tmp/
 benchmarks.csv
 credentials.txt
+prices.csv

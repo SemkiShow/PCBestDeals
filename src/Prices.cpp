@@ -2,6 +2,7 @@
 #include "Prices.hpp"
 #include <cmath>
 #include <curl/curl.h>
+#include <filesystem>
 #include <fstream>
 #include <simdjson.h>
 #include <vector>
@@ -153,16 +154,19 @@ std::string UrlEncode(const std::string& input)
 }
 
 std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string& token,
-                                    bool sandbox)
+                                    bool recursive, bool sandbox, int offset)
 {
+    if (query == "" || find(query.begin(), query.end(), '*') != query.end()) return {};
     CURL* curl = curl_easy_init();
     std::string readBuffer;
+    int limit = 200;
 
     if (curl)
     {
         std::string url = "https://api.";
         if (sandbox) url += "sandbox.";
-        url += "ebay.com/buy/browse/v1/item_summary/search?q=" + UrlEncode(query) + "&limit=200";
+        url += "ebay.com/buy/browse/v1/item_summary/search?q=" + UrlEncode(query) +
+               "&limit=" + std::to_string(limit) + "&offset=" + std::to_string(offset);
         struct curl_slist* headers = nullptr;
         headers = curl_slist_append(headers, ("Authorization: Bearer " + token).c_str());
         headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -189,6 +193,13 @@ std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string&
         return {};
     }
 
+    if (!doc["errors"].error())
+    {
+        std::cout << readBuffer << '\n';
+        exit(1);
+    }
+    if (!doc["total"].error() && doc["total"]->get_int64() == 0) return {};
+
     std::vector<DealEntry> deals;
     for (auto item: doc["itemSummaries"])
     {
@@ -202,9 +213,110 @@ std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string&
             price = std::string(item["price"]["value"]);
         }
 
-        std::cout << title << " - " << price << "\n";
+        // std::cout << title << " - " << price << "\n";
         deals.emplace_back(title, stod(price));
     }
 
+    std::cout << "\rProcessed " << std::fmin(offset + limit, doc["total"]->get_int64().value())
+              << " items of " << doc["total"]->get_int64() << std::flush;
+
+    if (offset + limit < doc["total"]->get_int64() && recursive)
+    {
+        // Process deals further than the first page
+        // (can be used only once a day because of the rate limit)
+        auto moreDeals = GetEbayDeals(query, token, recursive, sandbox, offset + limit);
+        for (auto deal: moreDeals)
+        {
+            deals.push_back(deal);
+        }
+    }
+    else
+    {
+        std::cout << '\n';
+    }
+
     return deals;
+}
+
+std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
+                                              const std::string& token, bool recursive,
+                                              bool sandbox)
+{
+    std::vector<DealEntry> partPrices;
+    {
+        std::string partPricesString;
+        std::ifstream file("prices.csv");
+        std::string buf;
+        while (std::getline(file, buf))
+        {
+            partPricesString += buf;
+        }
+        file.close();
+        auto rawPartPrices = Split(partPricesString);
+        for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
+        {
+            partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
+        }
+    }
+
+    std::ofstream file("prices.csv");
+
+    if (partPrices.size() < benchmarks.size())
+    {
+        // The previous download is incomplete, preserve data
+        for (size_t i = 0; i < partPrices.size(); i++)
+        {
+            file << partPrices[i].name << ',' << partPrices[i].price;
+            file << ",\n";
+            file << std::flush;
+        }
+    }
+    else
+    {
+        // The previous download is complete, start from scratch
+        partPrices.clear();
+    }
+
+    for (size_t i = partPrices.size(); i < benchmarks.size(); i++)
+    {
+        std::cout << "Getting the price of item " << i + 1 << " of " << benchmarks.size() << " ("
+                  << benchmarks[i].name << ")\n";
+        auto prices = GetEbayDeals(benchmarks[i].name, token, recursive, sandbox);
+        std::sort(prices.begin(), prices.end());
+        if (prices.size() == 0) prices.emplace_back(benchmarks[i].name, -1);
+
+        partPrices.emplace_back(benchmarks[i].name, prices[prices.size() / 2].price);
+        file << partPrices[i].name << ',' << partPrices[i].price;
+        if (i < benchmarks.size() - 1) file << ",\n";
+        file << std::flush;
+    }
+    file.close();
+    return partPrices;
+}
+
+std::vector<DealEntry> GetEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
+                                         const std::string& token, bool sandbox)
+{
+    if (std::filesystem::exists("prices.csv"))
+    {
+        std::string partPricesString;
+        std::ifstream file("prices.csv");
+        std::string buf;
+        while (std::getline(file, buf))
+        {
+            partPricesString += buf;
+        }
+        file.close();
+        auto rawPartPrices = Split(partPricesString);
+        std::vector<DealEntry> partPrices;
+        for (size_t i = 0; i < rawPartPrices.size(); i += 2)
+        {
+            partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
+        }
+        return partPrices;
+    }
+    else
+    {
+        return DownloadEbayPartPrices(benchmarks, token, sandbox);
+    }
 }
