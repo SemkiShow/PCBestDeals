@@ -21,6 +21,7 @@ set(RAYGUI_VERSION 4.0)
 set(ZLIB_VERSION 1.3.1)
 set(LIBZIP_VERSION 1.11.4)
 set(SIMDJSON_VERSION 4.0.3)
+set(LIBXLSXWRITER_VERSION 1.2.3)
 
 # Turn off all warning-related errors when compiling third-party code
 add_compile_options(-Wno-error)
@@ -139,12 +140,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(simdjson)
 
+# libxlsxwriter
+FetchContent_Declare(
+    xlsxwriter
+    URL https://github.com/jmcnamara/libxlsxwriter/archive/v${LIBXLSXWRITER_VERSION}.zip
+)
+FetchContent_MakeAvailable(xlsxwriter)
+
 add_compile_options(-Wall -Wextra)
 file(GLOB SOURCES src/*.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include/)
 set_target_properties(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-target_link_libraries(${PROJECT_NAME} PRIVATE raylib raygui zip simdjson)
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib raygui zip simdjson xlsxwriter)
 if (NOT TARGET CURL::libcurl)
     add_dependencies(${PROJECT_NAME} libpsl libcurl)
     target_include_directories(${PROJECT_NAME} PRIVATE

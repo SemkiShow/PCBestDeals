@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#define PRICES_PATH "tmp/prices.csv"
+
 struct DealEntry
 {
     std::string name;

@@ -245,7 +245,7 @@ std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>&
     std::vector<DealEntry> partPrices;
     {
         std::string partPricesString;
-        std::ifstream file("prices.csv");
+        std::ifstream file(PRICES_PATH);
         std::string buf;
         while (std::getline(file, buf))
         {
@@ -259,7 +259,7 @@ std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>&
         }
     }
 
-    std::ofstream file("prices.csv");
+    std::ofstream file(PRICES_PATH);
 
     if (partPrices.size() < benchmarks.size())
     {
@@ -297,10 +297,10 @@ std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>&
 std::vector<DealEntry> GetEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
                                          const std::string& token, bool sandbox)
 {
-    if (std::filesystem::exists("prices.csv"))
+    if (std::filesystem::exists(PRICES_PATH))
     {
         std::string partPricesString;
-        std::ifstream file("prices.csv");
+        std::ifstream file(PRICES_PATH);
         std::string buf;
         while (std::getline(file, buf))
         {
@@ -309,7 +309,7 @@ std::vector<DealEntry> GetEbayPartPrices(const std::vector<BenchmarkEntry>& benc
         file.close();
         auto rawPartPrices = Split(partPricesString);
         std::vector<DealEntry> partPrices;
-        for (size_t i = 0; i < rawPartPrices.size(); i += 2)
+        for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
         {
             partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
         }

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#define BENCHMARKS_PATH "tmp/benchmarks.csv"
+
 enum class DeviceType
 {
     CPU,

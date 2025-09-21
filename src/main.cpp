@@ -1,8 +1,8 @@
 #include "Benchmarks.hpp"
+#include "Exporting.hpp"
 #include "Prices.hpp"
 #include "UI.hpp"
 #include <raygui.h>
-#include <raylib.h>
 
 int main()
 {
@@ -15,12 +15,15 @@ int main()
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
     auto benchmarks = GetBlenderBenchmarks();
     auto token = GetEbayToken();
-    auto partPrices = DownloadEbayPartPrices(benchmarks, token);
+    auto partPrices = GetEbayPartPrices(benchmarks, token);
+    ExportAsXlsx(benchmarks, partPrices);
     return 0;
 
     // Init raylib
-    InitWindow(windowSize[0], windowSize[1], "PC Best Deals");
+    InitWindow(windowSize.x, windowSize.y, "PC Best Deals");
     SetExitKey(-1);
+
+    GuiSetFont(GetFontDefault());
 
     // Main loop
     while (!WindowShouldClose())

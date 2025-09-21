@@ -271,7 +271,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     }
 
     // Cache processed data
-    std::ofstream outputFile("benchmarks.csv");
+    std::ofstream outputFile(BENCHMARKS_PATH);
     for (size_t i = 0; i < benchmarks.size(); i++)
     {
         outputFile << benchmarks[i].name << ',' << benchmarks[i].type << ',' << benchmarks[i].score;
@@ -301,9 +301,9 @@ std::vector<std::string> Split(const std::string& input, const char delimiter)
 
 std::vector<BenchmarkEntry> GetBlenderBenchmarks()
 {
-    if (std::filesystem::exists("benchmarks.csv"))
+    if (std::filesystem::exists(BENCHMARKS_PATH))
     {
-        std::ifstream file("benchmarks.csv");
+        std::ifstream file(BENCHMARKS_PATH);
         std::string line, benchmarksString;
         while (std::getline(file, line))
         {

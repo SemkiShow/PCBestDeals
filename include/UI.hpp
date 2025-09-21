@@ -1,5 +1,7 @@
 #pragma once
 
-extern int windowSize[2];
+#include <raylib.h>
+
+extern Vector2 windowSize;
 
 void DrawFrame();
