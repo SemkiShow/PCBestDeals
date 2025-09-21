@@ -42,7 +42,6 @@ inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
     return a.score < b.score;
 }
 
-std::vector<std::string> Split(const std::string& input, const char delimiter = ',');
 void DownloadBlenderBenchmarks();
 std::vector<BenchmarkEntry> ProcessBlenderBenchmarks();
 std::vector<BenchmarkEntry> GetBlenderBenchmarks();

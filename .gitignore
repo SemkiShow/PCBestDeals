@@ -2,7 +2,6 @@ build*/
 .vscode/
 .cache/
 tmp/
-benchmarks.csv
 credentials.txt
-prices.csv
 output.xlsx
+settings.txt

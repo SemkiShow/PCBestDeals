@@ -14,7 +14,7 @@ cmake --build build_win -j
 cp build_win/bin/$executable_name.exe .
 
 # Zipping the build
-zip release.zip $executable_name $executable_name.exe LICENSE README.md
+zip release.zip $executable_name $executable_name.exe LICENSE README.md settings.txt
 rm $executable_name $executable_name.exe
 
 # Creating a GitHub release

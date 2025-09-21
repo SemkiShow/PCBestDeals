@@ -1,11 +1,14 @@
 #include "Benchmarks.hpp"
 #include "Exporting.hpp"
 #include "Prices.hpp"
+#include "Settings.hpp"
 #include "UI.hpp"
 #include <raygui.h>
 
 int main()
 {
+    Load();
+
     // Set raylib config flags
     int flags = 0;
     flags |= FLAG_VSYNC_HINT;
@@ -17,7 +20,6 @@ int main()
     auto token = GetEbayToken();
     auto partPrices = GetEbayPartPrices(benchmarks, token);
     ExportAsXlsx(benchmarks, partPrices);
-    return 0;
 
     // Init raylib
     InitWindow(windowSize.x, windowSize.y, "PC Best Deals");
@@ -32,6 +34,7 @@ int main()
     }
 
     // Close the program
+    Save();
     CloseWindow();
 
     return 0;

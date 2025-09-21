@@ -1,5 +1,6 @@
 #define CURL_STATICLIB
 #include "Prices.hpp"
+#include "Utils.hpp"
 #include <cmath>
 #include <curl/curl.h>
 #include <filesystem>
