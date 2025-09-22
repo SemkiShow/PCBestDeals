@@ -4,14 +4,14 @@ set -e
 executable_name=PCBestDeals
 
 # Compiling for Linux
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-cp build/bin/$executable_name .
+cmake -B build_release -DCMAKE_BUILD_TYPE=Release
+cmake --build build_release -j
+cp build_release/bin/$executable_name .
 
 # Compiling for Windows
-cmake -B build_win -DCMAKE_TOOLCHAIN_FILE=mingw-w64-x86_64.cmake -DCMAKE_BUILD_TYPE=Release
-cmake --build build_win -j
-cp build_win/bin/$executable_name.exe .
+cmake -B build_release_windows -DCMAKE_TOOLCHAIN_FILE=mingw-w64-x86_64.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build build_release_windows -j
+cp build_release_windows/bin/$executable_name.exe .
 
 # Zipping the build
 zip release.zip $executable_name $executable_name.exe LICENSE README.md resources/**

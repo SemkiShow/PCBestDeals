@@ -1,5 +1,11 @@
 # PCBestDeals
 
+<p float="left">
+  <img src="resources/screenshots/PCBestDeals1.png" width="300" />
+  <img src="resources/screenshots/PCBestDeals2.png" width="300" /> 
+  <img src="resources/screenshots/PCBestDeals3.png" width="300" />
+</p>
+
 A program for finding the best PC part deals
 
 ## How to run
