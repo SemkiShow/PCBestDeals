@@ -2,6 +2,7 @@
 #include "Settings.hpp"
 #include "System.hpp"
 #include "UI.hpp"
+#include <filesystem>
 #include <raygui.h>
 #include <thread>
 
@@ -10,6 +11,7 @@ int defaultFontSize = 24, fontSize = 24;
 
 std::vector<BenchmarkEntry> benchmarks;
 std::vector<DealEntry> prices;
+bool ebayCredentialsExist = std::filesystem::exists("credentials.txt");
 bool xlsxExportComplete = false;
 
 Vector2 GetCurrentWindowSize() { return {GetRenderWidth() * 1.f, GetRenderHeight() * 1.f}; }
@@ -75,7 +77,12 @@ void DrawFrame()
     }
     else
     {
-        if (!benchmarksAvailable)
+        if (!ebayCredentialsExist)
+        {
+            DrawTextScaled("You must enter your ebay developer\ncredentials! (see README.md)", 550,
+                           posY++ * defaultFontSize * 4, 1.9, {255, 0, 0, 255});
+        }
+        else if (!benchmarksAvailable)
         {
             DrawTextScaled("You must download Blender benchmarks first!", 550,
                            posY++ * defaultFontSize * 4, 1.9, {255, 0, 0, 255});
