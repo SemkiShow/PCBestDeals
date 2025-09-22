@@ -13,6 +13,9 @@ A program for finding the best PC part deals
 
 ## How to build
 
+- Register as a developer on [ebay](https://developer.ebay.com/)
+- Create a file named credentials.txt
+- Enter the client ID on the first line of the file and the client secret on the second line
 ```
 chmod +x run.sh
 ./run.sh

@@ -42,6 +42,8 @@ inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
     return a.score < b.score;
 }
 
+extern std::string blenderBenchmarksDownloadStatus;
+
 void DownloadBlenderBenchmarks();
 std::vector<BenchmarkEntry> ProcessBlenderBenchmarks();
 std::vector<BenchmarkEntry> GetBlenderBenchmarks();

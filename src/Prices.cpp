@@ -1,5 +1,6 @@
 #define CURL_STATICLIB
 #include "Prices.hpp"
+#include "Settings.hpp"
 #include "Utils.hpp"
 #include <cmath>
 #include <curl/curl.h>
@@ -7,6 +8,8 @@
 #include <fstream>
 #include <simdjson.h>
 #include <vector>
+
+std::string ebayPricesDownloadStatus = "";
 
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* s)
 {
@@ -239,32 +242,37 @@ std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string&
     return deals;
 }
 
+bool IsPricesDownloadComplete(const std::vector<BenchmarkEntry>& benchmarks,
+                              std::vector<DealEntry>& partPrices)
+{
+    std::string partPricesString;
+    std::ifstream file(PRICES_PATH);
+    std::string buf;
+    while (std::getline(file, buf))
+    {
+        partPricesString += buf;
+    }
+    file.close();
+    auto rawPartPrices = Split(partPricesString);
+    for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
+    {
+        partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
+    }
+    return partPrices.size() == benchmarks.size();
+}
+
 std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
                                               const std::string& token, bool recursive,
                                               bool sandbox)
 {
     std::vector<DealEntry> partPrices;
-    {
-        std::string partPricesString;
-        std::ifstream file(PRICES_PATH);
-        std::string buf;
-        while (std::getline(file, buf))
-        {
-            partPricesString += buf;
-        }
-        file.close();
-        auto rawPartPrices = Split(partPricesString);
-        for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
-        {
-            partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
-        }
-    }
-
+    bool isPricesDownloadComplete = IsPricesDownloadComplete(benchmarks, partPrices);
     std::ofstream file(PRICES_PATH);
 
-    if (partPrices.size() < benchmarks.size())
+    if (!isPricesDownloadComplete)
     {
         // The previous download is incomplete, preserve data
+        std::cout << partPrices.size() << '\n';
         for (size_t i = 0; i < partPrices.size(); i++)
         {
             file << partPrices[i].name << ',' << partPrices[i].price;
@@ -282,6 +290,8 @@ std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>&
     {
         std::cout << "Getting the price of item " << i + 1 << " of " << benchmarks.size() << " ("
                   << benchmarks[i].name << ")\n";
+        ebayPricesDownloadStatus = "Getting the price of item " + std::to_string(i + 1) + " of " +
+                                   std::to_string(benchmarks.size()) + "\n(" + benchmarks[i].name + ")";
         auto prices = GetEbayDeals(benchmarks[i].name, token, recursive, sandbox);
         std::sort(prices.begin(), prices.end());
         if (prices.size() == 0) prices.emplace_back(benchmarks[i].name, -1);
@@ -292,6 +302,8 @@ std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>&
         file << std::flush;
     }
     file.close();
+    ebayPricesDownloadStatus = "Finished downloading ebay prices!";
+    pricesAvailable = true;
     return partPrices;
 }
 

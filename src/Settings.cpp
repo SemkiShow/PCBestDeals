@@ -1,10 +1,14 @@
+#include "Benchmarks.hpp"
+#include "Prices.hpp"
 #include "Settings.hpp"
 #include "Utils.hpp"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
-std::string lastCAUpdate;
+std::string lastCAUpdate = "";
+bool benchmarksAvailable = false;
+bool pricesAvailable = false;
 
 void UpdateCACertificate()
 {
@@ -21,6 +25,21 @@ void UpdateCACertificate()
                                std::filesystem::copy_options::overwrite_existing);
     std::filesystem::remove("tmp/cacert.pem");
     std::cout << "Updated the CA certificate\n";
+}
+
+void CheckForDataAvailable()
+{
+    benchmarksAvailable = std::filesystem::exists(BENCHMARKS_PATH);
+    if (benchmarksAvailable)
+    {
+        auto benchmarks = GetBlenderBenchmarks();
+        std::vector<DealEntry> partPrices;
+        pricesAvailable = IsPricesDownloadComplete(benchmarks, partPrices);
+    }
+    else
+    {
+        pricesAvailable = false;
+    }
 }
 
 void Save()
@@ -67,4 +86,6 @@ void Load()
             UpdateCACertificate();
         }
     }
+
+    CheckForDataAvailable();
 }

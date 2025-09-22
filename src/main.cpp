@@ -1,6 +1,3 @@
-#include "Benchmarks.hpp"
-#include "Exporting.hpp"
-#include "Prices.hpp"
 #include "Settings.hpp"
 #include "UI.hpp"
 #include <raygui.h>
@@ -16,10 +13,6 @@ int main()
     flags |= FLAG_WINDOW_RESIZABLE;
     SetConfigFlags(flags);
     GuiSetStyle(DEFAULT, TEXT_SIZE, 24);
-    auto benchmarks = GetBlenderBenchmarks();
-    auto token = GetEbayToken();
-    auto partPrices = GetEbayPartPrices(benchmarks, token);
-    ExportAsXlsx(benchmarks, partPrices);
 
     // Init raylib
     InitWindow(windowSize.x, windowSize.y, "PC Best Deals");

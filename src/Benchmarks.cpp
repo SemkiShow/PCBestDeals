@@ -1,4 +1,5 @@
 #include "Benchmarks.hpp"
+#include "Settings.hpp"
 #include "Utils.hpp"
 #include <cstring>
 #include <filesystem>
@@ -8,6 +9,8 @@
 #include <string>
 #include <unordered_map>
 #include <zip.h>
+
+std::string blenderBenchmarksDownloadStatus = "";
 
 int UnzipFile(const std::string& zipPath, const std::string& extractDir)
 {
@@ -82,6 +85,7 @@ void DownloadBlenderBenchmarks()
         std::filesystem::create_directory("tmp");
     }
     std::cout << "Downloading Blender benchmarks...\n";
+    blenderBenchmarksDownloadStatus = "Downloading Blender benchmarks...";
     if (DownloadFile("https://opendata.blender.org/snapshots/opendata-latest.zip",
                      "tmp/opendata.zip") != 0)
     {
@@ -94,6 +98,7 @@ void DownloadBlenderBenchmarks()
         std::filesystem::create_directory("tmp/opendata");
     }
     std::cout << "Extracting Blender benchmarks...\n";
+    blenderBenchmarksDownloadStatus = "Extracting Blender benchmarks...";
     if (UnzipFile("tmp/opendata.zip", "tmp/opendata") != 0)
     {
         std::cerr << "Failed to uzip Blender Open Data!\n";
@@ -188,6 +193,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
 
     // Process the file
     std::cout << "Processing the Blender benchmarks file...\n";
+    blenderBenchmarksDownloadStatus = "Processing Blender benchmarks...";
     simdjson::dom::parser parser;
     std::vector<BenchmarkEntry> rawBenchmarks;
     std::ifstream benchmarksFile(benchmarksPath);
@@ -223,6 +229,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
 
     // Remove duplicates by finding the median average of the same devices' scores
     std::cout << "Removing duplicates...\n";
+    blenderBenchmarksDownloadStatus = "Removing duplicates...";
     std::vector<BenchmarkEntry> benchmarks;
     std::vector<double> scores;
     std::string lastName = rawBenchmarks[0].name;
@@ -248,6 +255,8 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
         if (i < benchmarks.size() - 1) outputFile << ",\n";
     }
     outputFile.close();
+    blenderBenchmarksDownloadStatus = "Finished processing Blender benchmarks!";
+    benchmarksAvailable = true;
     return benchmarks;
 }
 
