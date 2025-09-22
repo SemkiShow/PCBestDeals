@@ -180,7 +180,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     {
         if (entry.is_regular_file() && entry.path().extension() == ".jsonl")
         {
-            benchmarksPath = entry.path();
+            benchmarksPath = entry.path().string();
             break;
         }
     }
