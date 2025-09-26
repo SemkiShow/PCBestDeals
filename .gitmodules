@@ -1,0 +1,27 @@
+[submodule "thirdparty/raylib"]
+	path = thirdparty/raylib
+	url = https://github.com/raysan5/raylib
+[submodule "thirdparty/raygui"]
+	path = thirdparty/raygui
+	url = https://github.com/raysan5/raygui
+[submodule "thirdparty/curl"]
+	path = thirdparty/curl
+	url = https://github.com/curl/curl
+[submodule "thirdparty/libxlsxwriter"]
+	path = thirdparty/libxlsxwriter
+	url = https://github.com/jmcnamara/libxlsxwriter
+[submodule "thirdparty/libpsl"]
+	path = thirdparty/libpsl
+	url = https://github.com/rockdaboot/libpsl
+[submodule "thirdparty/libzip"]
+	path = thirdparty/libzip
+	url = https://github.com/nih-at/libzip
+[submodule "thirdparty/mbedtls"]
+	path = thirdparty/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls
+[submodule "thirdparty/simdjson"]
+	path = thirdparty/simdjson
+	url = https://github.com/simdjson/simdjson
+[submodule "thirdparty/zlib"]
+	path = thirdparty/zlib
+	url = https://github.com/madler/zlib
