@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SemkiShow
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 #define CURL_STATICLIB
 #include "Prices.hpp"
 #include "Settings.hpp"

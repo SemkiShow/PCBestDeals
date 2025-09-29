@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SemkiShow
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "System.hpp"
 #include <cstdlib>
 
@@ -12,7 +16,5 @@ void OpenInFileManager(const std::string& path)
 #elif __linux__
     std::string command = "xdg-open \"" + path + "\"";
     (void)system(command.c_str());
-#else
-#error Platform not supported
 #endif
 }

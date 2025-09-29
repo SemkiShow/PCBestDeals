@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 SemkiShow
+//
+// SPDX-License-Identifier: GPL-3.0-only
+
 #include "Benchmarks.hpp"
 #include "Prices.hpp"
 #include "Settings.hpp"
@@ -5,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 std::string lastCAUpdate = "";
 bool benchmarksAvailable = false;
