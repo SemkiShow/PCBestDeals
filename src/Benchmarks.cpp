@@ -252,13 +252,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     }
 
     // Cache processed data
-    std::ofstream outputFile(BENCHMARKS_PATH);
-    for (size_t i = 0; i < benchmarks.size(); i++)
-    {
-        outputFile << benchmarks[i].name << ',' << benchmarks[i].type << ',' << benchmarks[i].score;
-        if (i < benchmarks.size() - 1) outputFile << ",\n";
-    }
-    outputFile.close();
+    FilterBenchmarks(benchmarks);
     blenderBenchmarksDownloadStatus = "Finished processing Blender benchmarks!";
     benchmarksAvailable = true;
     return benchmarks;

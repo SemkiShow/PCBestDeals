@@ -5,6 +5,7 @@
 #include "Exporting.hpp"
 #include "Settings.hpp"
 #include "System.hpp"
+#include "Utils.hpp"
 #include "UI.hpp"
 #include <filesystem>
 #include <raygui.h>
@@ -114,6 +115,7 @@ void DrawFrame()
             auto benchmarks = GetBlenderBenchmarks();
             auto token = GetEbayToken();
             auto prices = GetEbayPartPrices(benchmarks, token);
+            FilterData(benchmarks, prices);
             ExportAsXlsx(benchmarks, prices);
             xlsxExportComplete = true;
             OpenInFileManager(".");
