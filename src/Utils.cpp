@@ -188,56 +188,57 @@ int DownloadFile(const std::string& url, const std::string& outputPath)
     return (res == CURLE_OK) ? 0 : 1;
 }
 
-void WriteBenchmarks(const std::vector<BenchmarkEntry>& benchmarks)
+void WriteBenchmarks(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks)
 {
     std::ofstream file(BENCHMARKS_PATH);
-    for (size_t i = 0; i < benchmarks.size(); i++)
+    size_t index = 0;
+    for (auto& benchmark: benchmarks)
     {
-        file << benchmarks[i].name << ',' << benchmarks[i].type << ',' << benchmarks[i].score;
-        if (i < benchmarks.size() - 1) file << ",\n";
+        file << benchmark.second.name << ',' << benchmark.second.type << ','
+             << benchmark.second.score;
+        if (index++ < benchmarks.size() - 1) file << ",\n";
     }
     file.close();
 }
 
-void WritePrices(const std::vector<DealEntry>& prices)
+void WritePrices(const std::unordered_map<std::string, DealEntry>& prices)
 {
     std::ofstream file(PRICES_PATH);
-    for (size_t i = 0; i < prices.size(); i++)
+    size_t index = 0;
+    for (auto& price: prices)
     {
-        file << prices[i].name << ',' << prices[i].price;
-        if (i < prices.size() - 1) file << ",\n";
+        file << price.second.name << ',' << price.second.price;
+        if (index++ < prices.size() - 1) file << ",\n";
     }
     file.close();
 }
 
-void FilterBenchmarks(std::vector<BenchmarkEntry>& benchmarks)
+void FilterBenchmarks(std::unordered_map<std::string, BenchmarkEntry>& benchmarks)
 {
-    for (size_t i = 0; i < benchmarks.size(); i++)
+    for (auto it = benchmarks.begin(); it != benchmarks.end();)
     {
-        if (std::find(badNames.begin(), badNames.end(), benchmarks[i].name) != badNames.end())
+        if (std::find(badNames.begin(), badNames.end(), it->second.name) != badNames.end())
         {
-            benchmarks.erase(benchmarks.begin() + i);
-            i--;
+            it = benchmarks.erase(it);
+            continue;
         }
+        ++it;
     }
     WriteBenchmarks(benchmarks);
 }
 
-void FilterData(std::vector<BenchmarkEntry>& benchmarks, std::vector<DealEntry>& prices)
+void FilterData(std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
+                std::unordered_map<std::string, DealEntry>& prices)
 {
-    if (benchmarks.size() != prices.size())
+    for (auto it = benchmarks.begin(); it != benchmarks.end();)
     {
-        std::cerr << "The benchmarks do not match the prices!\n";
-        return;
-    }
-    for (size_t i = 0; i < benchmarks.size(); i++)
-    {
-        if (std::find(badNames.begin(), badNames.end(), benchmarks[i].name) != badNames.end())
+        if (std::find(badNames.begin(), badNames.end(), it->second.name) != badNames.end())
         {
-            benchmarks.erase(benchmarks.begin() + i);
-            prices.erase(prices.begin() + i);
-            i--;
+            if (prices.find(it->first) != prices.end()) prices.erase(it->first);
+            it = benchmarks.erase(it);
+            continue;
         }
+        ++it;
     }
     WriteBenchmarks(benchmarks);
     WritePrices(prices);

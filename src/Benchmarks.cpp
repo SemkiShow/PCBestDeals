@@ -155,25 +155,25 @@ void ProcessBlenderBenchmarkEntry(simdjson::dom::element entry,
 std::unordered_map<std::string, double>
 GetSceneCoefficients(const std::vector<BenchmarkEntry>& benchmarks)
 {
-    std::unordered_map<std::string, std::vector<double>> sceneTimes;
+    std::unordered_map<std::string, std::vector<double>> sceneScores;
     for (size_t i = 0; i < benchmarks.size(); i++)
     {
-        sceneTimes[benchmarks[i].sceneName].push_back(benchmarks[i].score);
+        sceneScores[benchmarks[i].scene].push_back(benchmarks[i].score);
     }
-    for (auto& entry: sceneTimes)
+    for (auto& entry: sceneScores)
     {
         std::sort(entry.second.begin(), entry.second.end());
     }
 
     std::unordered_map<std::string, double> sceneCoefficients;
-    for (auto& entry: sceneTimes)
+    for (auto& entry: sceneScores)
     {
         sceneCoefficients[entry.first] = entry.second[entry.second.size() / 2];
     }
     return sceneCoefficients;
 }
 
-std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
+std::unordered_map<std::string, BenchmarkEntry> ProcessBlenderBenchmarks()
 {
     // Download if missing
     if (!std::filesystem::exists("tmp/opendata")) DownloadBlenderBenchmarks();
@@ -234,7 +234,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     // Remove duplicates by finding the median average of the same devices' scores
     std::cout << "Removing duplicates...\n";
     blenderBenchmarksDownloadStatus = "Removing duplicates...";
-    std::vector<BenchmarkEntry> benchmarks;
+    std::unordered_map<std::string, BenchmarkEntry> benchmarks;
     std::vector<double> scores;
     std::string lastName = rawBenchmarks[0].name;
     for (size_t i = 0; i < rawBenchmarks.size(); i++)
@@ -243,11 +243,11 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
         {
             std::sort(scores.begin(), scores.end());
             auto& benchmark = rawBenchmarks[i];
-            benchmarks.emplace_back(benchmark.name, benchmark.type, 0);
-            benchmarks[benchmarks.size() - 1].score = scores[scores.size() / 2];
+            benchmarks[benchmark.name] = {benchmark.name, benchmark.type,
+                                          scores[scores.size() / 2]};
             scores.clear();
         }
-        scores.push_back(sceneCoefficients[rawBenchmarks[i].sceneName] * rawBenchmarks[i].score);
+        scores.push_back(sceneCoefficients[rawBenchmarks[i].scene] * rawBenchmarks[i].score);
         lastName = rawBenchmarks[i].name;
     }
 
@@ -258,7 +258,7 @@ std::vector<BenchmarkEntry> ProcessBlenderBenchmarks()
     return benchmarks;
 }
 
-std::vector<BenchmarkEntry> GetBlenderBenchmarks()
+std::unordered_map<std::string, BenchmarkEntry> GetBlenderBenchmarks()
 {
     if (std::filesystem::exists(BENCHMARKS_PATH))
     {
@@ -269,14 +269,13 @@ std::vector<BenchmarkEntry> GetBlenderBenchmarks()
             benchmarksString += line;
         }
         auto benchmarksSplit = Split(benchmarksString);
-        std::vector<BenchmarkEntry> benchmarks;
+        std::unordered_map<std::string, BenchmarkEntry> benchmarks;
         for (size_t i = 0; i < benchmarksSplit.size(); i += 3)
         {
             auto name = benchmarksSplit[i];
             auto type = (benchmarksSplit[i + 1] == "CPU" ? DeviceType::CPU : DeviceType::GPU);
             auto score = stod(benchmarksSplit[i + 2]);
-            benchmarks.emplace_back(name, type, score);
-            benchmarks[benchmarks.size() - 1].score = score;
+            benchmarks[name] = {name, type, score};
         }
         return benchmarks;
     }

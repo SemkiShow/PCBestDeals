@@ -38,8 +38,8 @@ void CheckForDataAvailable()
     if (benchmarksAvailable)
     {
         auto benchmarks = GetBlenderBenchmarks();
-        std::vector<DealEntry> partPrices;
-        pricesAvailable = IsPricesDownloadComplete(benchmarks, partPrices);
+        std::unordered_map<std::string, DealEntry> prices;
+        pricesAvailable = IsPricesDownloadComplete(benchmarks, prices);
     }
     else
     {

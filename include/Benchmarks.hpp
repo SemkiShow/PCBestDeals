@@ -6,7 +6,7 @@
 
 #include <ostream>
 #include <string>
-#include <vector>
+#include <unordered_map>
 
 #define BENCHMARKS_PATH "tmp/benchmarks.csv"
 
@@ -23,13 +23,13 @@ inline std::ostream& operator<<(std::ostream& out, const DeviceType& deviceType)
 
 struct BenchmarkEntry
 {
-    std::string name, sceneName;
+    std::string name, scene, version;
     DeviceType type;
     double score;
 
     BenchmarkEntry() {}
-    BenchmarkEntry(std::string name, std::string sceneName, DeviceType type, double score)
-        : name(name), sceneName(sceneName), type(type), score(score)
+    BenchmarkEntry(std::string name, std::string scene, DeviceType type, double score)
+        : name(name), scene(scene), type(type), score(score)
     {
     }
     BenchmarkEntry(std::string name, DeviceType type, double score)
@@ -42,12 +42,12 @@ inline bool operator<(const BenchmarkEntry& a, const BenchmarkEntry& b)
 {
     if (a.type != b.type) return a.type < b.type;
     if (a.name != b.name) return a.name < b.name;
-    if (a.sceneName != b.sceneName) return a.sceneName < b.sceneName;
+    if (a.scene != b.scene) return a.scene < b.scene;
     return a.score < b.score;
 }
 
 extern std::string blenderBenchmarksDownloadStatus;
 
 void DownloadBlenderBenchmarks();
-std::vector<BenchmarkEntry> ProcessBlenderBenchmarks();
-std::vector<BenchmarkEntry> GetBlenderBenchmarks();
+std::unordered_map<std::string, BenchmarkEntry> ProcessBlenderBenchmarks();
+std::unordered_map<std::string, BenchmarkEntry> GetBlenderBenchmarks();

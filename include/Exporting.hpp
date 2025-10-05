@@ -6,7 +6,7 @@
 
 #include "Benchmarks.hpp"
 #include "Prices.hpp"
-#include <vector>
+#include <unordered_map>
 
-void ExportAsXlsx(const std::vector<BenchmarkEntry>& benchmarks,
-                  const std::vector<DealEntry>& prices);
+void ExportAsXlsx(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
+                  const std::unordered_map<std::string, DealEntry>& prices);

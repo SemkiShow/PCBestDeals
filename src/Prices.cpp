@@ -246,8 +246,8 @@ std::vector<DealEntry> GetEbayDeals(const std::string& query, const std::string&
     return deals;
 }
 
-bool IsPricesDownloadComplete(const std::vector<BenchmarkEntry>& benchmarks,
-                              std::vector<DealEntry>& partPrices)
+bool IsPricesDownloadComplete(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
+                              std::unordered_map<std::string, DealEntry>& prices)
 {
     std::string partPricesString;
     std::ifstream file(PRICES_PATH);
@@ -260,59 +260,71 @@ bool IsPricesDownloadComplete(const std::vector<BenchmarkEntry>& benchmarks,
     auto rawPartPrices = Split(partPricesString);
     for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
     {
-        partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
+        prices[rawPartPrices[i]] = {rawPartPrices[i], stod(rawPartPrices[i + 1])};
     }
-    return partPrices.size() == benchmarks.size();
+    for (auto& benchmark: benchmarks)
+    {
+        if (prices.find(benchmark.first) == prices.end()) return false;
+    }
+    return true;
 }
 
-std::vector<DealEntry> DownloadEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
-                                              const std::string& token, bool recursive,
-                                              bool sandbox)
+std::unordered_map<std::string, DealEntry>
+DownloadEbayPartPrices(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
+                       const std::string& token, bool recursive, bool sandbox)
 {
-    std::vector<DealEntry> partPrices;
-    bool isPricesDownloadComplete = IsPricesDownloadComplete(benchmarks, partPrices);
+    std::unordered_map<std::string, DealEntry> prices;
+    bool isPricesDownloadComplete = IsPricesDownloadComplete(benchmarks, prices);
     std::ofstream file(PRICES_PATH);
 
     if (!isPricesDownloadComplete)
     {
         // The previous download is incomplete, preserve data
-        std::cout << partPrices.size() << '\n';
-        for (size_t i = 0; i < partPrices.size(); i++)
+        std::cout << prices.size() << '\n';
+        for (auto& price: prices)
         {
-            file << partPrices[i].name << ',' << partPrices[i].price;
+            file << price.second.name << ',' << price.second.price;
             file << ",\n";
-            file << std::flush;
         }
+        file << std::flush;
     }
     else
     {
         // The previous download is complete, start from scratch
-        partPrices.clear();
+        prices.clear();
     }
 
-    for (size_t i = partPrices.size(); i < benchmarks.size(); i++)
+    size_t index = 0;
+    for (auto& benchmark: benchmarks)
     {
-        std::cout << "Getting the price of item " << i + 1 << " of " << benchmarks.size() << " ("
-                  << benchmarks[i].name << ")\n";
-        ebayPricesDownloadStatus = "Getting the price of item " + std::to_string(i + 1) + " of " +
-                                   std::to_string(benchmarks.size()) + "\n(" + benchmarks[i].name + ")";
-        auto prices = GetEbayDeals(benchmarks[i].name, token, recursive, sandbox);
-        std::sort(prices.begin(), prices.end());
-        if (prices.size() == 0) prices.emplace_back(benchmarks[i].name, -1);
+        if (prices.find(benchmark.first) != prices.end())
+        {
+            index++;
+            continue;
+        }
+        std::cout << "Getting the price of item " << index + 1 << " of " << benchmarks.size()
+                  << " (" << benchmark.second.name << ")\n";
+        ebayPricesDownloadStatus = "Getting the price of item " + std::to_string(index + 1) +
+                                   " of " + std::to_string(benchmarks.size()) + "\n(" +
+                                   benchmark.second.name + ")";
+        auto deals = GetEbayDeals(benchmark.second.name, token, recursive, sandbox);
+        std::sort(deals.begin(), deals.end());
+        if (deals.size() == 0) deals.emplace_back(benchmark.second.name, -1);
 
-        partPrices.emplace_back(benchmarks[i].name, prices[prices.size() / 2].price);
-        file << partPrices[i].name << ',' << partPrices[i].price;
-        if (i < benchmarks.size() - 1) file << ",\n";
+        prices[benchmark.first] = {benchmark.second.name, deals[deals.size() / 2].price};
+        file << prices[benchmark.first].name << ',' << prices[benchmark.first].price;
+        if (index++ < benchmarks.size() - 1) file << ",\n";
         file << std::flush;
     }
     file.close();
     ebayPricesDownloadStatus = "Finished downloading ebay prices!";
     pricesAvailable = true;
-    return partPrices;
+    return prices;
 }
 
-std::vector<DealEntry> GetEbayPartPrices(const std::vector<BenchmarkEntry>& benchmarks,
-                                         const std::string& token, bool sandbox)
+std::unordered_map<std::string, DealEntry>
+GetEbayPartPrices(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
+                  const std::string& token, bool sandbox)
 {
     if (std::filesystem::exists(PRICES_PATH))
     {
@@ -325,12 +337,12 @@ std::vector<DealEntry> GetEbayPartPrices(const std::vector<BenchmarkEntry>& benc
         }
         file.close();
         auto rawPartPrices = Split(partPricesString);
-        std::vector<DealEntry> partPrices;
+        std::unordered_map<std::string, DealEntry> prices;
         for (size_t i = 0; i + 1 < rawPartPrices.size(); i += 2)
         {
-            partPrices.emplace_back(rawPartPrices[i], stod(rawPartPrices[i + 1]));
+            prices[rawPartPrices[i]] = {rawPartPrices[i], stod(rawPartPrices[i + 1])};
         }
-        return partPrices;
+        return prices;
     }
     else
     {
