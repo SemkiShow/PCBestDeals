@@ -132,7 +132,14 @@ const std::vector<std::string> badNames = {"AMD 100-000000011-11",
                                            "Radeon 5",
                                            "Radeon 7",
                                            "Ryzen 5",
-                                           "Unknown AMD GPU"};
+                                           "Radeon RX Vega",
+                                           "Unknown AMD GPU",
+                                           "Radeon RX 580 Series [ZLUDA]",
+                                           "Radeon RX 470 Series [ZLUDA]",
+                                           "Radeon RX 570 Series [ZLUDA]",
+                                           "Radeon RX 590 Series [ZLUDA]",
+                                           "AMD Radeon(TM) RX 5600M Series",
+                                           "Intel(R) Data Center GPU Flex Series 170"};
 
 std::vector<std::string> Split(const std::string& input, const char delimiter)
 {
@@ -227,19 +234,16 @@ void FilterBenchmarks(std::unordered_map<std::string, BenchmarkEntry>& benchmark
     WriteBenchmarks(benchmarks);
 }
 
-void FilterData(std::unordered_map<std::string, BenchmarkEntry>& benchmarks,
-                std::unordered_map<std::string, DealEntry>& prices)
+void FilterPrices(std::unordered_map<std::string, DealEntry>& prices)
 {
-    for (auto it = benchmarks.begin(); it != benchmarks.end();)
+    for (auto it = prices.begin(); it != prices.end();)
     {
         if (std::find(badNames.begin(), badNames.end(), it->second.name) != badNames.end())
         {
-            if (prices.find(it->first) != prices.end()) prices.erase(it->first);
-            it = benchmarks.erase(it);
+            it = prices.erase(it);
             continue;
         }
         ++it;
     }
-    WriteBenchmarks(benchmarks);
     WritePrices(prices);
 }

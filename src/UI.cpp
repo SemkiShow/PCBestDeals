@@ -115,7 +115,8 @@ void DrawFrame()
             auto benchmarks = GetBlenderBenchmarks();
             auto token = GetEbayToken();
             auto prices = GetEbayPartPrices(benchmarks, token);
-            FilterData(benchmarks, prices);
+            FilterBenchmarks(benchmarks);
+            FilterPrices(prices);
             ExportAsXlsx(benchmarks, prices);
             xlsxExportComplete = true;
             OpenInFileManager(".");

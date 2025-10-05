@@ -317,6 +317,7 @@ DownloadEbayPartPrices(const std::unordered_map<std::string, BenchmarkEntry>& be
         file << std::flush;
     }
     file.close();
+    FilterPrices(prices);
     ebayPricesDownloadStatus = "Finished downloading ebay prices!";
     pricesAvailable = true;
     return prices;

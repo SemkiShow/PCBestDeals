@@ -15,4 +15,4 @@ int DownloadFile(const std::string& url, const std::string& outputPath);
 void WriteBenchmarks(const std::unordered_map<std::string, BenchmarkEntry>& benchmarks);
 void WritePrices(const std::unordered_map<std::string, DealEntry>& prices);
 void FilterBenchmarks(std::unordered_map<std::string, BenchmarkEntry>& benchmarks);
-void FilterData(std::unordered_map<std::string, BenchmarkEntry>& benchmarks, std::unordered_map<std::string, DealEntry>& prices);
+void FilterPrices(std::unordered_map<std::string, DealEntry>& prices);
