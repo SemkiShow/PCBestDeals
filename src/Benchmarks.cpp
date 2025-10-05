@@ -173,6 +173,27 @@ GetSceneCoefficients(const std::vector<BenchmarkEntry>& benchmarks)
     return sceneCoefficients;
 }
 
+std::unordered_map<std::string, double>
+GetVersionCoefficients(const std::vector<BenchmarkEntry>& benchmarks)
+{
+    std::unordered_map<std::string, std::vector<double>> versionScores;
+    for (size_t i = 0; i < benchmarks.size(); i++)
+    {
+        versionScores[benchmarks[i].version].push_back(benchmarks[i].score);
+    }
+    for (auto& entry: versionScores)
+    {
+        std::sort(entry.second.begin(), entry.second.end());
+    }
+
+    std::unordered_map<std::string, double> versionCoefficients;
+    for (auto& entry: versionScores)
+    {
+        versionCoefficients[entry.first] = entry.second[entry.second.size() / 2];
+    }
+    return versionCoefficients;
+}
+
 std::unordered_map<std::string, BenchmarkEntry> ProcessBlenderBenchmarks()
 {
     // Download if missing
@@ -228,8 +249,9 @@ std::unordered_map<std::string, BenchmarkEntry> ProcessBlenderBenchmarks()
     }
     std::sort(rawBenchmarks.begin(), rawBenchmarks.end());
 
-    // Get scene coefficients
+    // Get coefficients
     auto sceneCoefficients = GetSceneCoefficients(rawBenchmarks);
+    auto versionCoefficients = GetVersionCoefficients(rawBenchmarks);
 
     // Remove duplicates by finding the median average of the same devices' scores
     std::cout << "Removing duplicates...\n";
@@ -247,7 +269,9 @@ std::unordered_map<std::string, BenchmarkEntry> ProcessBlenderBenchmarks()
                                           scores[scores.size() / 2]};
             scores.clear();
         }
-        scores.push_back(sceneCoefficients[rawBenchmarks[i].scene] * rawBenchmarks[i].score);
+        double coefficient = sceneCoefficients[rawBenchmarks[i].scene] *
+                             versionCoefficients[rawBenchmarks[i].version] / 1000;
+        scores.push_back(coefficient * rawBenchmarks[i].score);
         lastName = rawBenchmarks[i].name;
     }
 
